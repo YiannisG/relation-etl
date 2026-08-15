@@ -23,7 +23,7 @@ class ExtractStats:
 
 
 class ApiClient:
-    """This HTTP client for mock API"""
+    """A HTTP client for mock API"""
 
     def __init__(self, base_url: str, timeout: int = DEFAULT_TIMEOUT):
         self.base_url = base_url
@@ -33,7 +33,7 @@ class ApiClient:
         self.stats = ExtractStats()
 
     def get(self, path: str, params: dict | None = None) -> dict | None:
-        """GET with retry/backoff. Returns pased JSON body"""
+        """GET with retry/backoff. Returns parsed JSON body"""
         url = f"{self.base_url}{path}"
         cache_key = f"{url}?{sorted((params or {}).items())}"
         headers = {}
@@ -46,7 +46,9 @@ class ApiClient:
             attempt += 1
             self.stats.requests_made += 1
             try:
-                resp = self.session.get(url=url, params=params, headers=headers, timeout=self.timeout)
+                resp = self.session.get(
+                    url=url, params=params, headers=headers, timeout=self.timeout
+                )
             except requests.RequestException as e:
                 if attempt > MAX_RETRIES:
                     raise
@@ -58,12 +60,16 @@ class ApiClient:
                 self.stats.not_modified += 1
                 return None
 
-            if resp.status_code in (429, 500,502, 503, 504):
+            if resp.status_code in (429, 500, 502, 503, 504):
                 if attempt > MAX_RETRIES:
                     resp.raise_for_status()
                 self.stats.retries += 1
-                self._sleep_backoff(attempt=attempt, retry_after=resp.headers.get("Retry-After"))
-                logger.warning(f"{resp.status_code} on {url} (attempt {attempt}/{MAX_RETRIES}), retrying")
+                self._sleep_backoff(
+                    attempt=attempt, retry_after=resp.headers.get("Retry-After")
+                )
+                logger.warning(
+                    f"{resp.status_code} on {url} (attempt {attempt}/{MAX_RETRIES}), retrying"
+                )
                 continue
 
             resp.raise_for_status()
@@ -71,7 +77,6 @@ class ApiClient:
             if etag:
                 self._etag_cache[cache_key] = etag
             return resp.json()
-
 
     @staticmethod
     def _sleep_backoff(attempt: int, retry_after: str | None = None):
@@ -98,7 +103,9 @@ class ApiClient:
             if page >= body["pages"]:
                 break
             page += 1
-        logger.info(f"extracted {len(items)} {resource} across {self.stats.pages_by_resource.get(resource, 0)} page(s)")
+        logger.info(
+            f"extracted {len(items)} {resource} across {self.stats.pages_by_resource.get(resource, 0)} page(s)"
+        )
         return items
 
 
@@ -107,5 +114,7 @@ def extract_all(base_url: str, page_size: int = 100) -> dict[str, list[dict]]:
     genes = client.get_all_pages(path="/genes", page_size=page_size)
     transcripts = client.get_all_pages(path="/transcripts", page_size=page_size)
     exons = client.get_all_pages(path="/exons", page_size=page_size)
-    logger.info(f"extraction complete: {len(genes)} genes, {len(transcripts)} transcripts, {len(exons)} exons ({client.stats.requests_made} http requests, {client.stats.retries} retries)")
+    logger.info(
+        f"extraction complete: {len(genes)} genes, {len(transcripts)} transcripts, {len(exons)} exons ({client.stats.requests_made} http requests, {client.stats.retries} retries)"
+    )
     return {"genes": genes, "transcripts": transcripts, "exons": exons}

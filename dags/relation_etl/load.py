@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from .transform import TransformResult
 
@@ -70,10 +70,28 @@ CREATE TABLE IF NOT EXISTS etl_run_log (
 );
 """
 
-GENE_COLS = ["gene_id", "gene_name", "biotype", "chromosome", "start", "end",
-             "gc_content", "synonyms", "pathways", "description"]
-TX_COLS = ["transcript_id", "gene_id", "biotype", "length", "exon_count",
-           "is_canonical", "cds_length", "feature_flags"]
+GENE_COLS = [
+    "gene_id",
+    "gene_name",
+    "biotype",
+    "chromosome",
+    "start",
+    "end",
+    "gc_content",
+    "synonyms",
+    "pathways",
+    "description",
+]
+TX_COLS = [
+    "transcript_id",
+    "gene_id",
+    "biotype",
+    "length",
+    "exon_count",
+    "is_canonical",
+    "cds_length",
+    "feature_flags",
+]
 EXON_COLS = ["exon_id", "transcript_id", "start", "end", "phase", "is_coding"]
 
 
@@ -102,27 +120,28 @@ def _upsert(conn: sqlite3.Connection, table: str, cols: list[str], rows: list[tu
 
 
 def load(result: TransformResult, db_path: str, run_id: str | None = None) -> str:
-    run_id = run_id or datetime.now(timezone.utc).strftime("run-%Y%m%dT%H%M%SZ")
-    started_at = datetime.now(timezone.utc).isoformat()
+    run_id = run_id or datetime.now(UTC).strftime("run-%Y%m%dT%H%M%SZ")
+    started_at = datetime.now(UTC).isoformat()
 
     conn = sqlite3.connect(db_path)
     try:
         conn.execute("PRAGMA foreign_keys = ON;")
         conn.executescript(SCHEMA)
 
-        _upsert(conn, "genes", GENE_COLS,
-                [_row(g, GENE_COLS) for g in result.genes])
-        _upsert(conn, "transcripts", TX_COLS,
-                [_row(t, TX_COLS) for t in result.transcripts])
-        _upsert(conn, "exons", EXON_COLS,
-                [_row(e, EXON_COLS) for e in result.exons])
+        _upsert(conn, "genes", GENE_COLS, [_row(g, GENE_COLS) for g in result.genes])
+        _upsert(
+            conn, "transcripts", TX_COLS, [_row(t, TX_COLS) for t in result.transcripts]
+        )
+        _upsert(conn, "exons", EXON_COLS, [_row(e, EXON_COLS) for e in result.exons])
 
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         conn.executemany(
             "INSERT INTO etl_quarantine (run_id, loaded_at, source_table, "
             "reason, record_json) VALUES (?, ?, ?, ?, ?)",
-            [(run_id, now, q.table, q.reason, json.dumps(q.record))
-             for q in result.quarantine],
+            [
+                (run_id, now, q.table, q.reason, json.dumps(q.record))
+                for q in result.quarantine
+            ],
         )
         conn.executemany(
             "INSERT INTO etl_merge_log (run_id, loaded_at, note) VALUES (?, ?, ?)",
@@ -132,8 +151,15 @@ def load(result: TransformResult, db_path: str, run_id: str | None = None) -> st
             "INSERT OR REPLACE INTO etl_run_log (run_id, started_at, finished_at, "
             "genes_loaded, transcripts_loaded, exons_loaded, quarantined) "
             "VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (run_id, started_at, now, len(result.genes), len(result.transcripts),
-             len(result.exons), len(result.quarantine)),
+            (
+                run_id,
+                started_at,
+                now,
+                len(result.genes),
+                len(result.transcripts),
+                len(result.exons),
+                len(result.quarantine),
+            ),
         )
         conn.commit()
         logger.info("load complete: run_id=%s db=%s", run_id, db_path)
