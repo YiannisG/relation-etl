@@ -10,10 +10,11 @@ x-airflow-common:
     AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: 'admin:Admin'
     AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS: 'true'
     MOCK_API_BASE_URL: ${MOCK_API_BASE_URL:-http://host.docker.internal:8000}
+    AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_API_AUTH_JWT_SECRET}
   volumes:
     - ./dags:/opt/airflow/dags
     - ./logs:/opt/airflow/logs
-    - ./warehouse:/opt/airflow/warehouses
+    - ./warehouse:/opt/airflow/warehouse
   extra_hosts:
     - "host.docker.internal:host-gateway"
   depends_on:

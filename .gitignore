@@ -22,3 +22,6 @@ warehouse/
 # OS-specific files
 .DS_Store
 Thumbs.db
+
+# env file
+.env

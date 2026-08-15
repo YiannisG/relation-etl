@@ -106,6 +106,6 @@ def extract_all(base_url: str, page_size: int = 100) -> dict[str, list[dict]]:
     client = ApiClient(base_url)
     genes = client.get_all_pages(path="/genes", page_size=page_size)
     transcripts = client.get_all_pages(path="/transcripts", page_size=page_size)
-    exons = client.get_all_pages(path="exons", page_size=page_size)
+    exons = client.get_all_pages(path="/exons", page_size=page_size)
     logger.info(f"extraction complete: {len(genes)} genes, {len(transcripts)} transcripts, {len(exons)} exons ({client.stats.requests_made} http requests, {client.stats.retries} retries)")
     return {"genes": genes, "transcripts": transcripts, "exons": exons}
