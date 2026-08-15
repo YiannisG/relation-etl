@@ -67,7 +67,7 @@ def _valid_exon_coords(start, end) -> tuple[bool, str | None]:
         return False, "start/end not numeric"
     if start < 0 or end < 0:
         return False, "negative coordinates"
-    if end < start:
+    if end <= start:
         return False, "end is <= start"
     if (end - start) > MAX_EXON_LENGTH:
         return False, "length exceeds specified maximum length"
