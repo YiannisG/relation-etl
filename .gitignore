@@ -1,0 +1,24 @@
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local environment & project tools
+.venv/
+venv/
+.uv/
+
+# Apache Airflow logs & local execution artifacts
+logs/
+airflow-*.err
+airflow-*.log
+airflow-*.pid
+airflow-*.out
+
+# Local DuckDB / Postgres / SQLite database files (Your warehouse folder)
+warehouse/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
