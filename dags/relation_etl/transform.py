@@ -108,6 +108,7 @@ def transform(raw: dict[str, list[dict]]) -> TransformResult:
                 reason=f"orphan: transcript_id {exon.get('transcript_id')!r} not found in transcripts"
             ))
             continue
+        clean_exons.append(exon)
     result.exons = clean_exons
 
     logging.info(
