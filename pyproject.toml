@@ -1,16 +1,18 @@
 [project]
 name = "relation-etl"
 version = "0.1.0"
-description = "Add your description here"
+description = "ETL process for existing mock API"
 authors = [
     { name = "Yiannis Galanakis", email = "igalas@hotmail.co.uk" }
 ]
 requires-python = ">=3.12"
-dependencies = []
-
-[project.scripts]
-relation-etl = "relation_etl:main"
+dependencies = [
+    "requests>=2.34.2",
+]
 
 [build-system]
 requires = ["uv_build>=0.12.3,<0.13.0"]
 build-backend = "uv_build"
+
+[tool.uv]
+package = false
