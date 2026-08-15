@@ -28,7 +28,7 @@ WAREHOUSE_DB_PATH = "/opt/airflow/warehouse/warehouse.db"
 def relation_etl_dag():
     @task(retries=0)  # extract.py already retries transient 429/500 itself;
     # an Airflow-level retry here would double up the backoff.
-    def extract():
+    def run_extract():
         return extract_all(MOCK_API_BASE_URL)
 
     @task
@@ -61,7 +61,7 @@ def relation_etl_dag():
         run_id = load(result, WAREHOUSE_DB_PATH)
         return run_id
 
-    run_load(run_transform(extract()))
+    run_load(run_transform(run_extract()))
 
 
 relation_etl_dag()
