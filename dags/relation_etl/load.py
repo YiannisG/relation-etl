@@ -185,12 +185,18 @@ def load(result: TransformResult, db_path: str, run_id: str | None = None) -> st
             conn.execute("PRAGMA foreign_keys = ON;")
             conn.executescript(SCHEMA)
 
-            _upsert(conn, "genes", GENE_COLS, [_row(g, GENE_COLS) for g in result.genes])
             _upsert(
-                conn, "transcripts", TX_COLS,
+                conn, "genes", GENE_COLS, [_row(g, GENE_COLS) for g in result.genes]
+            )
+            _upsert(
+                conn,
+                "transcripts",
+                TX_COLS,
                 [_row(t, TX_COLS) for t in result.transcripts],
             )
-            _upsert(conn, "exons", EXON_COLS, [_row(e, EXON_COLS) for e in result.exons])
+            _upsert(
+                conn, "exons", EXON_COLS, [_row(e, EXON_COLS) for e in result.exons]
+            )
 
             now = datetime.now(UTC).isoformat()
             conn.executemany(
