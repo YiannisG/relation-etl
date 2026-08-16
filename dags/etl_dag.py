@@ -23,18 +23,13 @@ WAREHOUSE_DB_PATH = "/opt/airflow/warehouse/warehouse.db"
     tags=["etl", "genomics"],
 )
 def relation_etl_dag():
-    @task(retries=0)  # extract.py already retries transient 429/500 itself;
-    # an Airflow-level retry here would double up the backoff.
+    @task(retries=0)  # extract.py already retries transient 429/500;
     def run_extract():
         return extract_all(MOCK_API_BASE_URL)
 
     @task
     def run_transform(raw: dict) -> dict:
         result = transform(raw)
-        # Airflow passes task results between tasks via XCom, which needs
-        # JSON-serializable data. TransformResult is a dataclass (with
-        # nested QuarantineRecord dataclasses), so convert it to plain
-        # dicts/lists here rather than passing the object directly.
         return {
             "genes": result.genes,
             "transcripts": result.transcripts,
