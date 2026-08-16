@@ -7,7 +7,7 @@ logger = logging.getLogger("etl.transform")
 
 
 # SANITY CHECK
-MAX_EXON_LENGTH = 3_000_000
+MAX_EXON_LENGTH = 20_000
 
 
 @dataclass
