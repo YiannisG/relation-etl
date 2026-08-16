@@ -20,6 +20,7 @@ class QuarantineRecord:
 @dataclass
 class TransformResult:
     """Provides a sufficient summary of all transformations"""
+
     genes: list[dict] = field(default_factory=list)
     transcripts: list[dict] = field(default_factory=list)
     exons: list[dict] = field(default_factory=list)
@@ -28,7 +29,11 @@ class TransformResult:
 
 
 def _merge_duplicates(
-    records: list[dict], key: str, table: str, result: TransformResult, priority_field: str | None = None,
+    records: list[dict],
+    key: str,
+    table: str,
+    result: TransformResult,
+    priority_field: str | None = None,
 ) -> dict[str, dict]:
     """
     Handle merging of duplicates.
@@ -51,7 +56,9 @@ def _merge_duplicates(
             continue
         existing = merged[pk]
         incoming_is_priority = bool(priority_field) and rec.get(priority_field) is True
-        existing_is_priority = bool(priority_field) and existing.get(priority_field) is True
+        existing_is_priority = (
+            bool(priority_field) and existing.get(priority_field) is True
+        )
         for field_name, value in rec.items():
             if value is None:
                 continue
@@ -116,7 +123,7 @@ def transform(raw: dict[str, list[dict]]) -> TransformResult:
         key="transcript_id",
         table="transcripts",
         result=result,
-        priority_field="is_canonical"
+        priority_field="is_canonical",
     )
     clean_transcripts = {}
     for tx_id, tx in merged_transcripts.items():

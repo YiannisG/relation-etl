@@ -8,7 +8,6 @@ from relation_etl.extract import extract_all
 from relation_etl.load import load
 from relation_etl.transform import QuarantineRecord, TransformResult, transform
 
-
 MOCK_API_BASE_URL = os.environ.get(
     "MOCK_API_BASE_URL", "http://host.docker.internal:8000"
 )
