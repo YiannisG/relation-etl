@@ -19,6 +19,7 @@ class QuarantineRecord:
 
 @dataclass
 class TransformResult:
+    """Provides a sufficient summary of all transformations"""
     genes: list[dict] = field(default_factory=list)
     transcripts: list[dict] = field(default_factory=list)
     exons: list[dict] = field(default_factory=list)
@@ -27,8 +28,14 @@ class TransformResult:
 
 
 def _merge_duplicates(
-    records: list[dict], key: str, table: str, result: TransformResult
+    records: list[dict], key: str, table: str, result: TransformResult, priority_field: str | None = None,
 ) -> dict[str, dict]:
+    """
+    Handle merging of duplicates.
+    Where a primary key has already been seen for a table, for fields of that key take the first that is not None as the default choice and quarentine the other.
+    If a priority_field (bool) is specified, the primary key entry with this value==True will be used
+        ## This is messy - TODO - generalise this concept further to so non-bool fields can be accepted also
+    """
     merged: dict[str, dict] = {}
     for rec in records:
         pk = rec.get(key)
@@ -43,26 +50,38 @@ def _merge_duplicates(
             merged[pk] = dict(rec)
             continue
         existing = merged[pk]
+        incoming_is_priority = bool(priority_field) and rec.get(priority_field) is True
+        existing_is_priority = bool(priority_field) and existing.get(priority_field) is True
         for field_name, value in rec.items():
             if value is None:
                 continue
             if existing.get(field_name) is None:
                 existing[field_name] = value
             elif existing[field_name] != value:
-                result.merge_log.append(
-                    f"{table} {pk}: conflicting '{field_name}' "
-                    f"{existing[field_name]!r} kept, {value!r} discarded"
-                )
+                if incoming_is_priority and not existing_is_priority:
+                    result.merge_log.append(
+                        f"{table} {pk}: conflicting '{field_name}' "
+                        f"{value!r} kept ({priority_field}=True), "
+                        f"{existing[field_name]!r} discarded"
+                    )
+                    existing[field_name] = value
+                else:
+                    result.merge_log.append(
+                        f"{table} {pk}: conflicting '{field_name}' "
+                        f"{existing[field_name]!r} kept, {value!r} discarded"
+                    )
     return merged
 
 
 def _normalize_gene_name(name: str | None) -> str | None:
+    """Normalisation of gene name to convert to all upper case."""
     if name is None:
         return None
     return name.strip().upper()
 
 
 def _valid_exon_coords(start, end) -> tuple[bool, str | None]:
+    """Basic validation for exon coordinate properties. Inconsistencies should be quarantined"""
     if not isinstance(start, (int, float)) or not isinstance(end, (int, float)):
         return False, "start/end not numeric"
     if start < 0 or end < 0:
@@ -75,6 +94,11 @@ def _valid_exon_coords(start, end) -> tuple[bool, str | None]:
 
 
 def transform(raw: dict[str, list[dict]]) -> TransformResult:
+    """
+    The order of processing is: 1. Gene, 2. Transcript, 3. exons.
+    If a gene is missing a primary key and is dropped, child transcripts (and hence exons) will also be dropped. This minimises fluff in the data that is not useful and keeps things tidy.
+    All dropped entities are recorded in the quarantine log for review.
+    """
     result = TransformResult()
 
     # genes
@@ -92,6 +116,7 @@ def transform(raw: dict[str, list[dict]]) -> TransformResult:
         key="transcript_id",
         table="transcripts",
         result=result,
+        priority_field="is_canonical"
     )
     clean_transcripts = {}
     for tx_id, tx in merged_transcripts.items():
